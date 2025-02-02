@@ -1,0 +1,35 @@
+{
+    "diners": [
+        {
+            "name": "Emily Chen",
+            "reviews": [
+                {
+                    "restaurant_name": "French Laudure",
+                    "date": "2023-11-15",
+                    "rating": 5,
+                    "content": "I visited last autumn, and it was unforgettable. They crafted a special gluten-free tasting menu for me. The wine pairing was exceptional."
+                }
+            ],
+            "reservations": [
+                {
+                    "date": "2024-05-20",
+                    "number_of_people": 4,
+                    "orders": [
+                        {
+                            "item": "Duck Confit",
+                            "dietary_tags": ["gluten-free"],
+                            "price": 45.0
+                        }
+                    ]
+                }
+            ],
+            "emails": [
+                {
+                    "date": "2024-05-18",
+                    "subject": "Modify Reservation",
+                    "combined_thread": "Hi, I need to add one more person to our reservation. Also, could you ensure gluten-free options are available? One of our guests has celiac disease."
+                }
+            ]
+        }
+    ]
+} 

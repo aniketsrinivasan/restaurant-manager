@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "processed_at": "2025-02-02T18:13:05.741326",
+    "input_file": "backend/data/sample_reservations.json"
+  },
+  "reservations": [
+    {
+      "client_name": "Emily Chen",
+      "number_of_guests": 5,
+      "date": "2024-05-20",
+      "food_ordered": [
+        {
+          "item": "Duck Confit",
+          "quantity": 1,
+          "dietary_tags": [
+            "gluten-free"
+          ],
+          "price": 45.0
+        }
+      ],
+      "is_vip": false,
+      "special_requests": [
+        "Add one more person to reservation",
+        "Ensure gluten-free options are available"
+      ],
+      "preferences": [
+        "Gluten-free tasting menu",
+        "Exceptional wine pairing"
+      ]
+    }
+  ]
+}
