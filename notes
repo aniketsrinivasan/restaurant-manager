@@ -1,0 +1,27 @@
+Goal:
+- List of diners and their reservations for the night:
+    - Name
+    - Reviews (given to other restaurants and/or French Laudure), including comments
+    - Reservations made, including date + order + dietary restrictions + price
+    - Emails from the diner (possibly regarding reservations/preferences/etc.)
+- Extract the following information from the above dataset:
+    - Name
+    - Date of reservation
+    - Total number of guests for reservation (cross-reference with email)
+    - Whether VIP or not (cross-reference with email)
+    - Orders and dietary tags on orders (cross-reference with email)
+    - Suggestions for improving customer experience: 
+        - Discussion topics
+        - Menu preferences
+        - Action points based on the reservation and/or email
+        - Special requests (e.g. wheelchair access, VIP room, etc.)
+
+Create a profile for each table:
+- All the information from above
+- Create interactive dashboard to show overall information:
+    - Total revenue for the day
+    - Total number of diners for the day
+    - Number of each type of order (with dietary restrictions)
+    - Number of VIP diners and special requests
+
+...

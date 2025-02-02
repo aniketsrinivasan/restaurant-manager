@@ -1,0 +1,19 @@
+{
+  "name": "reservation-service",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "dependencies": {
+    "express": "^4.18.2",
+    "openai": "^4.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "joi": "^17.9.2"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+} 

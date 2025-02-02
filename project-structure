@@ -1,0 +1,12 @@
+restaurant-management/
+├── frontend/                 # React frontend application
+│   ├── src/
+│   ├── public/
+│   └── package.json
+├── reservation-service/      # Microservice for reservation processing
+│   ├── src/
+│   └── package.json
+├── backend/                 # Main backend server
+│   ├── src/
+│   └── package.json
+└── docker-compose.yml       # For containerization 
