@@ -2,12 +2,17 @@ from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 from datetime import datetime
 
+class OriginalReservationData(BaseModel):
+    name: str
+    reviews: List[dict]
+    emails: List[dict]
+
 class FoodOrder(BaseModel):
     """Model for food orders."""
     item: str = Field(..., description="Name of the food item")
     quantity: int = Field(..., gt=0, description="Quantity ordered")
     dietary_tags: List[str] = Field(default_factory=list, description="Dietary tags for this item")
-    price: float = Field(..., gt=0, description="Price per item in currency units")
+    price: float = Field(..., description="Price per item in currency units")
 
 class ReservationOutput(BaseModel):
     """Structured output for reservation processing."""
