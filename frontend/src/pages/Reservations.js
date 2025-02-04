@@ -19,7 +19,10 @@ import {
   DialogContent,
   DialogActions,
   Menu,
-  MenuItem
+  MenuItem,
+  Collapse,
+  Paper,
+  InputBase,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -52,6 +55,10 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import ErrorIcon from '@mui/icons-material/Error';
 import CircularProgress from '@mui/material/CircularProgress';
+import ReplyIcon from '@mui/icons-material/Reply';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import SendIcon from '@mui/icons-material/Send';
+import { generateAIResponse, saveMessage, getStoredMessages } from '../services/messageService';
 
 const getInitials = (name) => {
   return name
@@ -533,15 +540,170 @@ const DietaryTag = ({ label }) => (
   </Typography>
 );
 
-const ReservationDetails = ({ reservation, visibleSections }) => {
-  // Move previousVisits calculation inside the component
-  const previousVisits = useMemo(() => {
-    return reservation?.original_data?.reviews.filter(
-      review => review.restaurant_name.toLowerCase() === 'french laudure'
-    ) || [];
-  }, [reservation?.original_data]);
+const MessageBubble = ({ message, isReply }) => (
+  <Box
+    sx={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: isReply ? 'flex-end' : 'flex-start',
+      mb: 2,
+    }}
+  >
+    <Paper
+      sx={{
+        p: 2,
+        maxWidth: '80%',
+        bgcolor: isReply ? 'primary.dark' : 'background.paper',
+        borderRadius: 2,
+      }}
+    >
+      <Typography variant="body1" color={isReply ? 'primary.contrastText' : 'text.primary'}>
+        {message.content}
+      </Typography>
+      <Typography 
+        variant="caption" 
+        color={isReply ? 'primary.contrastText' : 'text.secondary'}
+        sx={{ opacity: 0.8, display: 'block', mt: 1 }}
+      >
+        {new Date(message.timestamp).toLocaleString()}
+      </Typography>
+    </Paper>
+  </Box>
+);
 
-  const [showPreviousVisits, setShowPreviousVisits] = useState(false);
+const MessageThread = ({ messages, onSendReply, reservation }) => {
+  const [replyText, setReplyText] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState(null);
+  const [threadMessages, setThreadMessages] = useState([]);
+  
+  // Load messages when thread is opened
+  useEffect(() => {
+    const storedMessages = getStoredMessages(reservation.source_id);
+    const initialMessages = messages.map(email => ({
+      type: 'client',
+      content: email.combined_thread,
+      timestamp: email.date,
+      subject: email.subject
+    }));
+    setThreadMessages([...initialMessages, ...storedMessages]);
+  }, [messages, reservation.source_id]);
+  
+  const handleSend = () => {
+    if (replyText.trim()) {
+      const newMessage = {
+        type: 'reply',
+        content: replyText,
+        timestamp: new Date().toISOString()
+      };
+      saveMessage(reservation.source_id, newMessage);
+      setThreadMessages(prev => [...prev, newMessage]);
+      onSendReply(replyText);
+      setReplyText('');
+    }
+  };
+
+  const handleRequestAI = async () => {
+    try {
+      setIsGenerating(true);
+      setError(null);
+      
+      // Get the latest client message
+      const latestClientMessage = threadMessages
+        .filter(m => m.type === 'client')
+        .pop();
+        
+      if (!latestClientMessage) {
+        throw new Error('No client message found to respond to');
+      }
+      
+      const response = await generateAIResponse(
+        latestClientMessage.content,
+        reservation
+      );
+      
+      // Set the AI response in the reply text instead of sending it immediately
+      setReplyText(response);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {threadMessages.map((message, index) => (
+        <MessageBubble
+          key={index}
+          message={message}
+          isReply={message.type === 'reply'}
+        />
+      ))}
+
+      {/* Error message if any */}
+      {error && (
+        <Typography 
+          color="error" 
+          variant="caption" 
+          sx={{ mt: 1, display: 'block' }}
+        >
+          {error}
+        </Typography>
+      )}
+
+      {/* Reply Input */}
+      <Paper
+        sx={{
+          p: '2px 4px',
+          display: 'flex',
+          alignItems: 'center',
+          bgcolor: 'background.paper',
+          borderRadius: 2,
+          mt: 2,
+        }}
+      >
+        <Tooltip title="Generate AI suggestion">
+          <IconButton 
+            sx={{ p: '10px' }}
+            onClick={handleRequestAI}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <CircularProgress size={20} />
+            ) : (
+              <AutoAwesomeIcon />
+            )}
+          </IconButton>
+        </Tooltip>
+        <InputBase
+          sx={{ ml: 1, flex: 1 }}
+          multiline
+          maxRows={4}
+          placeholder="Type your reply..."
+          value={replyText}
+          onChange={(e) => setReplyText(e.target.value)}
+        />
+        <IconButton 
+          sx={{ p: '10px' }}
+          onClick={handleSend}
+          disabled={!replyText.trim()}
+        >
+          <SendIcon />
+        </IconButton>
+      </Paper>
+    </Box>
+  );
+};
+
+const ReservationDetails = ({ reservation, visibleSections }) => {
+  const [showMessage, setShowMessage] = useState(false);
+
+  const handleSendReply = (message) => {
+    // This function is now just a callback for the MessageThread
+    // The actual message saving is handled in MessageThread
+    console.log('Reply sent:', message);
+  };
 
   return (
     <Box sx={{ 
@@ -550,6 +712,27 @@ const ReservationDetails = ({ reservation, visibleSections }) => {
       ...fadeInAnimation,
       ...expandAnimation
     }}>
+      {/* Client Message Section */}
+      {reservation.original_data?.emails?.[0] && (
+        <Box sx={{ mb: 2 }}>
+          <Button
+            onClick={() => setShowMessage(!showMessage)}
+            startIcon={<EmailIcon />}
+            endIcon={showMessage ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+            sx={{ mb: 1 }}
+          >
+            Messages
+          </Button>
+          <Collapse in={showMessage}>
+            <MessageThread
+              messages={reservation.original_data.emails}
+              onSendReply={handleSendReply}
+              reservation={reservation}
+            />
+          </Collapse>
+        </Box>
+      )}
+
       {/* Preferences */}
       {visibleSections.preferences && reservation.preferences && (
         <Box sx={{ 
@@ -635,87 +818,6 @@ const ReservationDetails = ({ reservation, visibleSections }) => {
               {request}
             </Typography>
           ))}
-        </Box>
-      )}
-
-      {/* Previous Visits to French Laudure */}
-      {previousVisits.length > 0 && (
-        <Box sx={{ mb: 2 }}>
-          <Button
-            onClick={() => setShowPreviousVisits(!showPreviousVisits)}
-            sx={{
-              color: 'text.secondary',
-              p: 0.75,
-              justifyContent: 'flex-start',
-              width: '100%',
-              borderRadius: 1,
-              bgcolor: 'rgba(255, 255, 255, 0.03)',
-              '&:hover': {
-                bgcolor: 'rgba(255, 255, 255, 0.05)',
-                transform: 'translateY(-1px)',
-              },
-              transition: `all ${TRANSITION_DURATION} cubic-bezier(0.4, 0, 0.2, 1)`,
-              mb: showPreviousVisits ? 2 : 0
-            }}
-            endIcon={showPreviousVisits ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-          >
-            <HistoryIcon sx={{ mr: 1, fontSize: '1.2rem' }} />
-            Previous Visits ({previousVisits.length})
-          </Button>
-          
-          {showPreviousVisits && (
-            <Stack 
-              spacing={2}
-              sx={{
-                ...fadeInAnimation,
-                ...expandAnimation
-              }}
-            >
-              {previousVisits.map((review, idx) => (
-                <Box
-                  key={idx}
-                  sx={{
-                    p: 2,
-                    bgcolor: 'rgba(255, 255, 255, 0.03)',
-                    borderRadius: 1,
-                    border: '1px solid',
-                    borderColor: 'rgba(255, 255, 255, 0.05)',
-                    position: 'relative',
-                    transition: `all ${TRANSITION_DURATION} cubic-bezier(0.4, 0, 0.2, 1)`,
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-                      borderColor: 'rgba(255, 255, 255, 0.1)'
-                    }
-                  }}
-                >
-                  <Box sx={{ 
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 0.5,
-                    bgcolor: 'rgba(255, 215, 0, 0.1)',
-                    px: 1,
-                    py: 0.5,
-                    borderRadius: 1
-                  }}>
-                    <StarIcon sx={{ fontSize: '0.9rem', color: 'gold' }} />
-                    <Typography variant="caption" sx={{ color: 'gold' }}>
-                      {review.rating}/5
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
-                    Visited on {new Date(review.date).toLocaleDateString()}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    {review.content}
-                  </Typography>
-                </Box>
-              ))}
-            </Stack>
-          )}
         </Box>
       )}
     </Box>

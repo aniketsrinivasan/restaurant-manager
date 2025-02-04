@@ -31,3 +31,8 @@ class ReservationOutput(BaseModel):
             return v
         except ValueError:
             raise ValueError('Date must be in YYYY-MM-DD format')
+
+class MessageResponse(BaseModel):
+    """Structured output for message responses."""
+    suggested_reply: str = Field(..., description="The suggested reply message")
+    tone: str = Field(..., description="The tone of the message (formal, friendly, etc.)")
