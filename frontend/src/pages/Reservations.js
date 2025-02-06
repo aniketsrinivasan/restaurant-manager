@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { 
   Box, 
   Card, 
@@ -59,6 +59,7 @@ import ReplyIcon from '@mui/icons-material/Reply';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import SendIcon from '@mui/icons-material/Send';
 import { generateAIResponse, saveMessage, getStoredMessages } from '../services/messageService';
+import { ColorModeContext } from '../theme/ThemeContext';
 
 const getInitials = (name) => {
   return name
@@ -697,81 +698,143 @@ const MessageThread = ({ messages, onSendReply, reservation }) => {
 };
 
 const ReservationDetails = ({ reservation, visibleSections }) => {
+  const { isCompact } = useContext(ColorModeContext);
   const [showMessage, setShowMessage] = useState(false);
 
   const handleSendReply = (message) => {
-    // This function is now just a callback for the MessageThread
-    // The actual message saving is handled in MessageThread
     console.log('Reply sent:', message);
   };
 
-  return (
+  const HeaderSection = () => (
     <Box sx={{ 
-      mt: 2, 
-      pl: 7,
-      ...fadeInAnimation,
-      ...expandAnimation
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: 2,
+      mb: isCompact ? 1 : 2
     }}>
-      {/* Client Message Section */}
-      {reservation.original_data?.emails?.[0] && (
-        <Box sx={{ mb: 2 }}>
-          <Button
-            onClick={() => setShowMessage(!showMessage)}
-            startIcon={<EmailIcon />}
-            endIcon={showMessage ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-            sx={{ mb: 1 }}
-          >
-            Messages
-          </Button>
-          <Collapse in={showMessage}>
-            <MessageThread
-              messages={reservation.original_data.emails}
-              onSendReply={handleSendReply}
-              reservation={reservation}
-            />
-          </Collapse>
-        </Box>
-      )}
+      {/* VIP Status and Preferences side by side */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+      </Box>
+    </Box>
+  );
 
-      {/* Preferences */}
+  const CompactContent = () => (
+    <Box>
+      {/* Preferences Section - Above the grid */}
       {visibleSections.preferences && reservation.preferences && (
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 2, 
-          mb: 2,
-          alignItems: 'center',
-        }}>
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-            <Box sx={{ 
-              display: 'flex', 
-              gap: 1,
-              flexWrap: 'wrap',
-              alignItems: 'center'
-            }}>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                Preferences:
-              </Typography>
-              {reservation.preferences.map((pref, idx) => (
-                <Box
-                  key={idx}
-                  sx={{
-                    px: 1,
-                    py: 0.5,
-                    borderRadius: 1,
-                    bgcolor: 'rgba(255, 255, 255, 0.05)',
-                    fontSize: '0.75rem',
-                    color: 'text.secondary',
-                  }}
-                >
-                  {pref}
-                </Box>
-              ))}
-            </Box>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+            Preferences:
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {reservation.preferences.map((pref, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1,
+                  bgcolor: 'rgba(255, 255, 255, 0.05)',
+                  fontSize: '0.75rem',
+                  color: 'text.secondary',
+                }}
+              >
+                {pref}
+              </Box>
+            ))}
           </Box>
         </Box>
       )}
 
-      {/* Food Orders */}
+      {/* Grid Layout for Food Orders and Special Requests */}
+      <Box sx={{ 
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 2,
+        mt: 1
+      }}>
+        {/* Food Orders Column */}
+        {visibleSections.foodOrders && (
+          <Box>
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+              Food Orders:
+            </Typography>
+            {reservation.food_ordered.map((order, idx) => (
+              <Box key={idx} sx={{ mb: 0.5 }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {order.quantity}x {order.item} - ${order.price}
+                  {order.dietary_tags.length > 0 && (
+                    <Box component="span" sx={{ ml: 1 }}>
+                      {order.dietary_tags.map(tag => (
+                        <DietaryTag key={tag} label={tag} />
+                      ))}
+                    </Box>
+                  )}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
+
+        {/* Special Requests Column */}
+        {visibleSections.specialRequests && reservation.special_requests.length > 0 && (
+          <Box>
+            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+              Special Requests:
+            </Typography>
+            {reservation.special_requests.map((request, idx) => (
+              <Typography 
+                key={idx} 
+                variant="body2" 
+                sx={{ 
+                  color: 'text.secondary',
+                  display: 'flex',
+                  alignItems: 'center',
+                  '&:before': {
+                    content: '"•"',
+                    mr: 1,
+                    color: 'primary.main'
+                  }
+                }}
+              >
+                {request}
+              </Typography>
+            ))}
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+
+  const RegularContent = () => (
+    <>
+      {/* Preferences section - shown at the top */}
+      {visibleSections.preferences && reservation.preferences && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
+            Preferences:
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {reservation.preferences.map((pref, idx) => (
+              <Box
+                key={idx}
+                sx={{
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1,
+                  bgcolor: 'rgba(255, 255, 255, 0.05)',
+                  fontSize: '0.75rem',
+                  color: 'text.secondary',
+                }}
+              >
+                {pref}
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {/* Regular layout for food orders and special requests */}
       {visibleSections.foodOrders && (
         <Box sx={{ mb: 2 }}>
           <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
@@ -794,7 +857,6 @@ const ReservationDetails = ({ reservation, visibleSections }) => {
         </Box>
       )}
 
-      {/* Special Requests */}
       {visibleSections.specialRequests && reservation.special_requests.length > 0 && (
         <Box sx={{ mb: 2 }}>
           <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 1 }}>
@@ -818,6 +880,40 @@ const ReservationDetails = ({ reservation, visibleSections }) => {
               {request}
             </Typography>
           ))}
+        </Box>
+      )}
+    </>
+  );
+
+  return (
+    <Box sx={{ 
+      mt: 2, 
+      pl: 7,
+      ...fadeInAnimation,
+      ...expandAnimation
+    }}>
+      <HeaderSection />
+      
+      {isCompact ? <CompactContent /> : <RegularContent />}
+
+      {/* Messages Section */}
+      {reservation.original_data?.emails?.[0] && (
+        <Box sx={{ mb: 2 }}>
+          <Button
+            onClick={() => setShowMessage(!showMessage)}
+            startIcon={<EmailIcon />}
+            endIcon={showMessage ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+            sx={{ mb: 1 }}
+          >
+            Messages
+          </Button>
+          <Collapse in={showMessage}>
+            <MessageThread
+              messages={reservation.original_data.emails}
+              onSendReply={handleSendReply}
+              reservation={reservation}
+            />
+          </Collapse>
         </Box>
       )}
     </Box>
@@ -903,6 +999,7 @@ const Reservations = () => {
     specialRequests: true,
     preferences: true,
     vipStatus: true,
+    messages: true,
   });
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1057,6 +1154,13 @@ const Reservations = () => {
   const handleViewOriginalData = () => {
     setShowOriginalData(true);
     handleMenuClose();
+  };
+
+  const toggleSection = (section) => {
+    setVisibleSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
   };
 
   if (loading) {
@@ -1265,7 +1369,15 @@ const Reservations = () => {
           <Stack spacing={2}>
             {filteredReservations.map((reservation, index) => (
               <Box key={index}>
-                {index > 0 && <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.05)' }} />}
+                {index > 0 && (
+                  <Divider 
+                    sx={{ 
+                      my: 2,
+                      borderColor: 'rgba(255, 255, 255, 0.05)',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+                    }} 
+                  />
+                )}
                 <Box sx={{ 
                   display: 'flex', 
                   flexDirection: 'column'
