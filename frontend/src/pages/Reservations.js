@@ -558,13 +558,13 @@ const MessageBubble = ({ message, isReply }) => (
         borderRadius: 2,
       }}
     >
-      <Typography variant="body1" color={isReply ? 'primary.contrastText' : 'text.primary'}>
+      <Typography variant="body2" color={isReply ? 'primary.contrastText' : 'text.primary'} sx={{ fontSize: '0.85rem' }}>
         {message.content}
       </Typography>
       <Typography 
         variant="caption" 
         color={isReply ? 'primary.contrastText' : 'text.secondary'}
-        sx={{ opacity: 0.8, display: 'block', mt: 1 }}
+        sx={{ opacity: 0.8, display: 'block', mt: 1, fontSize: '0.75rem' }}
       >
         {new Date(message.timestamp).toLocaleString()}
       </Typography>
@@ -700,9 +700,89 @@ const MessageThread = ({ messages, onSendReply, reservation }) => {
 const ReservationDetails = ({ reservation, visibleSections }) => {
   const { isCompact } = useContext(ColorModeContext);
   const [showMessage, setShowMessage] = useState(false);
+  const [showReviews, setShowReviews] = useState(false);
 
   const handleSendReply = (message) => {
     console.log('Reply sent:', message);
+  };
+
+  const ReviewsSection = () => {
+    const frenchLaudureReviews = reservation.original_data?.reviews?.filter(
+      review => review.restaurant_name.toLowerCase() === 'french laudure'
+    );
+
+    if (!frenchLaudureReviews?.length) return null;
+
+    return (
+      <Box sx={{ mt: 3, mb: isCompact ? 3 : 0 }}>
+        <Box
+          onClick={() => setShowReviews(!showReviews)}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            p: 1.5,
+            bgcolor: 'rgba(255, 255, 255, 0.03)',
+            borderRadius: 1,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+              bgcolor: 'rgba(255, 255, 255, 0.05)',
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <RateReviewIcon sx={{ fontSize: '1.2rem', color: 'text.secondary' }} />
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Previous Reviews at the French Laudure
+            </Typography>
+          </Box>
+          {showReviews ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+        </Box>
+        <Collapse in={showReviews}>
+          <Box sx={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            mt: 2,
+            px: 1
+          }}>
+            {frenchLaudureReviews.map((review, index) => (
+              <Box key={index} sx={{ 
+                p: 2, 
+                bgcolor: 'rgba(255, 255, 255, 0.03)', 
+                borderRadius: 1,
+                position: 'relative'
+              }}>
+                <Box sx={{ 
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  bgcolor: 'rgba(255, 215, 0, 0.1)',
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1
+                }}>
+                  <StarIcon sx={{ fontSize: '0.9rem', color: 'gold' }} />
+                  <Typography variant="caption" sx={{ color: 'gold' }}>
+                    {review.rating}/5
+                  </Typography>
+                </Box>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  {new Date(review.date).toLocaleDateString()}
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {review.content}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Collapse>
+      </Box>
+    );
   };
 
   const HeaderSection = () => (
@@ -803,6 +883,48 @@ const ReservationDetails = ({ reservation, visibleSections }) => {
           </Box>
         )}
       </Box>
+
+      {/* Reviews Section */}
+      <ReviewsSection />
+
+      {/* Messages Section */}
+      {reservation.original_data?.emails?.[0] && (
+        <Box sx={{ mt: 3 }}>
+          <Box
+            onClick={() => setShowMessage(!showMessage)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              p: 1.5,
+              bgcolor: 'rgba(255, 255, 255, 0.03)',
+              borderRadius: 1,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.05)',
+              }
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <EmailIcon sx={{ fontSize: '1.2rem', color: 'text.secondary' }} />
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Messages
+              </Typography>
+            </Box>
+            {showMessage ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          </Box>
+          <Collapse in={showMessage}>
+            <Box sx={{ mt: 2, px: 1 }}>
+              <MessageThread
+                messages={reservation.original_data.emails}
+                onSendReply={handleSendReply}
+                reservation={reservation}
+              />
+            </Box>
+          </Collapse>
+        </Box>
+      )}
     </Box>
   );
 
@@ -882,6 +1004,48 @@ const ReservationDetails = ({ reservation, visibleSections }) => {
           ))}
         </Box>
       )}
+
+      {/* Reviews Section */}
+      <ReviewsSection />
+
+      {/* Messages Section */}
+      {reservation.original_data?.emails?.[0] && (
+        <Box sx={{ mb: 3 }}>
+          <Box
+            onClick={() => setShowMessage(!showMessage)}
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              p: 1.5,
+              bgcolor: 'rgba(255, 255, 255, 0.03)',
+              borderRadius: 1,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 0.05)',
+              }
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <EmailIcon sx={{ fontSize: '1.2rem', color: 'text.secondary' }} />
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                Messages
+              </Typography>
+            </Box>
+            {showMessage ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          </Box>
+          <Collapse in={showMessage}>
+            <Box sx={{ mt: 2, px: 1 }}>
+              <MessageThread
+                messages={reservation.original_data.emails}
+                onSendReply={handleSendReply}
+                reservation={reservation}
+              />
+            </Box>
+          </Collapse>
+        </Box>
+      )}
     </>
   );
 
@@ -895,27 +1059,6 @@ const ReservationDetails = ({ reservation, visibleSections }) => {
       <HeaderSection />
       
       {isCompact ? <CompactContent /> : <RegularContent />}
-
-      {/* Messages Section */}
-      {reservation.original_data?.emails?.[0] && (
-        <Box sx={{ mb: 2 }}>
-          <Button
-            onClick={() => setShowMessage(!showMessage)}
-            startIcon={<EmailIcon />}
-            endIcon={showMessage ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-            sx={{ mb: 1 }}
-          >
-            Messages
-          </Button>
-          <Collapse in={showMessage}>
-            <MessageThread
-              messages={reservation.original_data.emails}
-              onSendReply={handleSendReply}
-              reservation={reservation}
-            />
-          </Collapse>
-        </Box>
-      )}
     </Box>
   );
 };
